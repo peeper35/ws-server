@@ -1,14 +1,21 @@
+mod channel;
 mod config;
 mod handlers;
 mod types;
 mod utils;
-mod websocket_client;
+mod zerodha_conn;
 
+use std::collections::HashMap;
+use std::sync::Arc;
+
+use channel::create_id_channels;
 use dotenv::dotenv;
+use handlers::aznxt_server::handle_aznxt_server_conn;
+use handlers::zerodha_client::handle_zerodha_recv;
 use tokio::net::TcpListener;
+use tokio::sync::Mutex;
 
-use crate::handlers::ws_server::handle_ws_server;
-use crate::websocket_client::connection::create_shared_websocket_client;
+use crate::zerodha_conn::connection::create_zerodha_client_split;
 
 #[macro_use]
 extern crate tracing;
@@ -21,28 +28,24 @@ async fn main() {
     config::init::init_subscriber();
 
     let listener = TcpListener::bind(WS_ADDRESS).await.unwrap();
-    info!("WS server listening on: {}", WS_ADDRESS);
+    info!("ws server listening on: {}", WS_ADDRESS);
 
-    let shared_websocket_client = create_shared_websocket_client().await;
+    let (zerodha_ws_client_tx, zerodha_ws_client_rx) = create_zerodha_client_split().await;
+    let connectd_clients = Arc::new(Mutex::new(HashMap::new()));
 
-    let (ws_conn_send_tx, ws_client_send_rx) = futures_channel::mpsc::unbounded::<String>();
-    let (ws_client_recv_tx, ws_conn_recv_rx) = futures_channel::mpsc::unbounded::<String>();
-
-    tokio::spawn(handlers::ws_client::handle_websocket_client(
-        shared_websocket_client,
-        ws_client_send_rx,
-        ws_client_recv_tx,
+    tokio::spawn(handle_zerodha_recv(
+        zerodha_ws_client_rx,
+        connectd_clients.clone(),
     ));
 
-    let shared_ws_conn_recv_rx = std::sync::Arc::new(tokio::sync::Mutex::new(ws_conn_recv_rx));
-    let shared_ws_conn_send_tx = std::sync::Arc::new(tokio::sync::Mutex::new(ws_conn_send_tx));
-
-    while let Ok((stream, addr)) = listener.accept().await {
-        tokio::spawn(handle_ws_server(
-            stream,
-            addr,
-            std::sync::Arc::clone(&shared_ws_conn_send_tx),
-            std::sync::Arc::clone(&shared_ws_conn_recv_rx),
+    while let Ok((raw_stream, _)) = listener.accept().await {
+        let (client_recv_tx, client_recv_rx) = create_id_channels();
+        tokio::spawn(handle_aznxt_server_conn(
+            raw_stream,
+            zerodha_ws_client_tx.clone(),
+            client_recv_rx,
+            client_recv_tx,
+            connectd_clients.clone(),
         ));
     }
 }
