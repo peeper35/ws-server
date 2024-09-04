@@ -38,6 +38,7 @@ pub struct OHLC {
 }
 
 impl ZerodhaMessage {
+    #[instrument(fields(zerodha = true))]
     pub fn parse(msg: &[u8]) -> Vec<ZerodhaMessage> {
         let mut tick_data = Vec::new();
 
@@ -147,10 +148,7 @@ impl ZerodhaMessage {
                 }
 
                 _ => {
-                    warn!(
-                        "[Zerodha] :: Undefined packet length received: {}",
-                        packet_length
-                    );
+                    warn!("Undefined packet length received: {}", packet_length);
                 }
             }
 
