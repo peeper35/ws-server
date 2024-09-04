@@ -1,3 +1,5 @@
+pub mod aznxt_server;
+mod client_helpers;
 pub mod dto;
-pub mod ws_client;
-pub mod ws_server;
+mod server_helpers;
+pub mod zerodha_client;
