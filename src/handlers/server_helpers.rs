@@ -1,10 +1,16 @@
+use jwt::Error;
 use serde_json::json;
 use tokio_tungstenite::tungstenite::handshake::server::Request;
 use tokio_tungstenite::tungstenite::http::Response;
 use tokio_tungstenite::tungstenite::http::StatusCode;
 
+use hmac::{Hmac, Mac};
+use jwt::VerifyWithKey;
+use sha2::Sha256;
+
 use crate::channel::IdSender;
 use crate::types::ConnectedClients;
+use crate::utils::get_env_var;
 
 #[instrument(skip(response))]
 pub fn authenticate_websocket_connection(
@@ -15,7 +21,24 @@ pub fn authenticate_websocket_connection(
         response
             .headers_mut()
             .insert("Sec-WebSocket-Protocol", token.parse().unwrap());
-        Ok(response)
+
+        if token == get_env_var("NODE_JS_SERVICE_AUTH_TOKEN")
+            || token == get_env_var("ORDER_MANAGEMENT_SERVICE_AUTH_TOKEN")
+        {
+            Ok(response)
+        } else {
+            if let Err(err) = verify_jwt(token.as_str()) {
+                warn!("JWT Verify Error: {:?}", err);
+                warn!("Unauthenticated client connect request. Closing connection");
+
+                Err(Response::builder()
+                    .status(StatusCode::UNAUTHORIZED)
+                    .body(Some(String::from("No token found in request")))
+                    .unwrap())
+            } else {
+                Ok(response)
+            }
+        }
     } else {
         warn!("Unauthenticated client connect request. Closing connection");
         Err(Response::builder()
@@ -33,19 +56,12 @@ pub fn extract_token_from_request(request: &Request) -> Option<String> {
         .map(|token_str| token_str.to_string())
 }
 
-// use hmac::{Hmac, Mac};
-// use jwt::VerifyWithKey;
-// use sha2::Sha256;
-// use std::collections::BTreeMap;
+pub fn verify_jwt(token: &str) -> Result<(), Error> {
+    let key: Hmac<Sha256> = Hmac::new_from_slice(get_env_var("JWT_SECRET").as_bytes())?;
+    token.verify_with_key(&key)?;
 
-// use super::ws_client;
-
-// pub async fn verify_jwt(token: &str) {
-//     let key: Hmac<Sha256> = Hmac::new_from_slice(b"thisisasamplesecret").unwrap();
-//     let claims: BTreeMap<String, String> = token.verify_with_key(&key).unwrap();
-
-//     println!("JWT: {:?}", claims);
-// }
+    Ok(())
+}
 
 pub async fn register_client_for_instruments(
     instruments: &[i32],
