@@ -17,35 +17,37 @@ pub fn authenticate_websocket_connection(
     request: &Request,
     mut response: Response<()>,
 ) -> Result<Response<()>, Response<Option<String>>> {
-    if let Some(token) = extract_token_from_request(request) {
-        response
-            .headers_mut()
-            .insert("Sec-WebSocket-Protocol", token.parse().unwrap());
+    // if let Some(token) = extract_token_from_request(request) {
+    //     response
+    //         .headers_mut()
+    //         .insert("Sec-WebSocket-Protocol", token.parse().unwrap());
 
-        if token == get_env_var("NODE_JS_SERVICE_AUTH_TOKEN")
-            || token == get_env_var("ORDER_MANAGEMENT_SERVICE_AUTH_TOKEN")
-        {
-            Ok(response)
-        } else {
-            if let Err(err) = verify_jwt(token.as_str()) {
-                warn!("JWT Verify Error: {:?}", err);
-                warn!("Unauthenticated client connect request. Closing connection");
+    //     if token == get_env_var("NODE_JS_SERVICE_AUTH_TOKEN")
+    //         || token == get_env_var("ORDER_MANAGEMENT_SERVICE_AUTH_TOKEN")
+    //     {
+    //         Ok(response)
+    //     } else {
+    //         if let Err(err) = verify_jwt(token.as_str()) {
+    //             warn!("JWT Verify Error: {:?}", err);
+    //             warn!("Unauthenticated client connect request. Closing connection");
 
-                Err(Response::builder()
-                    .status(StatusCode::UNAUTHORIZED)
-                    .body(Some(String::from("No token found in request")))
-                    .unwrap())
-            } else {
-                Ok(response)
-            }
-        }
-    } else {
-        warn!("Unauthenticated client connect request. Closing connection");
-        Err(Response::builder()
-            .status(StatusCode::UNAUTHORIZED)
-            .body(Some(String::from("No token found in request")))
-            .unwrap())
-    }
+    //             Err(Response::builder()
+    //                 .status(StatusCode::UNAUTHORIZED)
+    //                 .body(Some(String::from("No token found in request")))
+    //                 .unwrap())
+    //         } else {
+    //             Ok(response)
+    //         }
+    //     }
+    // } else {
+    //     warn!("Unauthenticated client connect request. Closing connection");
+    //     Err(Response::builder()
+    //         .status(StatusCode::UNAUTHORIZED)
+    //         .body(Some(String::from("No token found in request")))
+    //         .unwrap())
+    // }
+
+    Ok(response)
 }
 
 pub fn extract_token_from_request(request: &Request) -> Option<String> {
