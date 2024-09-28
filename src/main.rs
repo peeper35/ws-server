@@ -20,7 +20,7 @@ use crate::zerodha_conn::connection::create_zerodha_client_split;
 #[macro_use]
 extern crate tracing;
 
-const WS_ADDRESS: &str = "127.0.0.1:9000";
+const WS_ADDRESS: &str = "127.0.0.1:10000";
 
 #[tokio::main]
 async fn main() {
