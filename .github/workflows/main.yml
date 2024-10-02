@@ -1,0 +1,33 @@
+name: "Aznxt WS Server"
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-vps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build Docker Image
+        run: |
+        docker build \
+          --build-arg ZERODHA_API_KEY=${{ secrets.ZERODHA_API_KEY }} \
+          --build-arg ZERODHA_ACCESS_TOKEN=${{ secrets.ZERODHA_ACCESS_TOKEN }} \
+          --build-arg NODE_JS_SERVICE_AUTH_TOKEN=${{ secrets.NODE_JS_SERVICE_AUTH_TOKEN }} \
+          --build-arg ORDER_MANAGEMENT_SERVICE_AUTH_TOKEN=${{ secrets.ORDER_MANAGEMENT_SERVICE_AUTH_TOKEN }} \
+          --build-arg JWT_SECRET=${{ secrets.JWT_SECRET }} \
+          -t aznxt-ws-server .
+      - name: Save Docker Image
+        run: docker save -o aznxt-ws-server.tar aznxt-ws-server
+      - name: Install SSH key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
+      - name: rsync over SSH
+        run: rsync -r ./aznxt-ws-server.tar ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.PROJECT_DIRECTORY }}
+        shell: bash
+      - name: Start process
+        run: ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} 'bash -s' < start.sh
+        shell: bash
