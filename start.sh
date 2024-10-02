@@ -1,5 +1,5 @@
 echo "==================================== Deployment Started ===================================="
-cd /root/app
+cd aznxt-ws-server/
 echo "===================== 1. Stop and Remove Running Container ====================="
 docker rm aznxt-ws-server --force 2> /dev/null
 docker image rm aznxt-ws-server 2> /dev/null
