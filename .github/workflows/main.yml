@@ -11,13 +11,13 @@ jobs:
       - uses: actions/checkout@v2
       - name: Build Docker Image
         run: |
-        docker build \
-          --build-arg ZERODHA_API_KEY=${{ secrets.ZERODHA_API_KEY }} \
-          --build-arg ZERODHA_ACCESS_TOKEN=${{ secrets.ZERODHA_ACCESS_TOKEN }} \
-          --build-arg NODE_JS_SERVICE_AUTH_TOKEN=${{ secrets.NODE_JS_SERVICE_AUTH_TOKEN }} \
-          --build-arg ORDER_MANAGEMENT_SERVICE_AUTH_TOKEN=${{ secrets.ORDER_MANAGEMENT_SERVICE_AUTH_TOKEN }} \
-          --build-arg JWT_SECRET=${{ secrets.JWT_SECRET }} \
-          -t aznxt-ws-server .
+          docker build \
+            --build-arg ZERODHA_API_KEY=${{ secrets.ZERODHA_API_KEY }} \
+            --build-arg ZERODHA_ACCESS_TOKEN=${{ secrets.ZERODHA_ACCESS_TOKEN }} \
+            --build-arg NODE_JS_SERVICE_AUTH_TOKEN=${{ secrets.NODE_JS_SERVICE_AUTH_TOKEN }} \
+            --build-arg ORDER_MANAGEMENT_SERVICE_AUTH_TOKEN=${{ secrets.ORDER_MANAGEMENT_SERVICE_AUTH_TOKEN }} \
+            --build-arg JWT_SECRET=${{ secrets.JWT_SECRET }} \
+            -t aznxt-ws-server .
       - name: Save Docker Image
         run: docker save -o aznxt-ws-server.tar aznxt-ws-server
       - name: Install SSH key
