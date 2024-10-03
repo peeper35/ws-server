@@ -17,7 +17,7 @@ use tokio::sync::Mutex;
 
 use crate::zerodha_conn::connection::create_zerodha_client_split;
 
-const WS_SERVICE: &str = "127.0.0.1:9000";
+const WS_SERVICE: &str = "0.0.0.0:9000";
 
 #[macro_use]
 extern crate tracing;
