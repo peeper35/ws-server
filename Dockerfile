@@ -1,7 +1,5 @@
 FROM rust:1.76.0 as build
 
-RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificates
-
 # create a new empty shell project
 RUN USER=root cargo new --bin aznxt-ws-server
 WORKDIR /aznxt-ws-server
@@ -19,6 +17,8 @@ RUN rm ./target/release/deps/aznxt_ws_server*
 RUN cargo build --release
 
 FROM ubuntu:latest
+
+RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificates
 
 COPY --from=build /aznxt-ws-server/target/release/aznxt-ws-server .
 
