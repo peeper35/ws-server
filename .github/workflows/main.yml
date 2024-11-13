@@ -31,3 +31,9 @@ jobs:
       - name: Start process
         run: ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} 'bash -s' < start.sh
         shell: bash
+      - name: Restart WebSocket
+        run: |
+          curl -X POST https://paper-trading-aznxt.onrender.com/websocket/restart \
+          -H "Authorization: Bearer ${{ secrets.RESTART_WS_KEY }}" \
+          -H "Content-Type: application/json"
+        shell: bash
