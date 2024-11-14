@@ -41,7 +41,6 @@ dependencies = [
  "futures-channel",
  "futures-util",
  "hmac",
- "httparse",
  "jwt",
  "lazy_static",
  "serde",
