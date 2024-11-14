@@ -13,29 +13,73 @@ use tokio_tungstenite::WebSocketStream;
 
 use crate::channel::IdReceiver;
 use crate::channel::IdSender;
-use crate::handlers::server_helpers::authenticate_websocket_connection;
-use crate::handlers::server_helpers::store_node_service_idsender;
+use crate::handlers::server_helpers::check_and_store_node_service_idsender;
+use crate::handlers::server_helpers::extract_token_from_request;
 use crate::types::ConnectedClients;
 use crate::types::ZerodhaClientSink;
+use crate::utils::get_env_var;
 
 use tracing::instrument;
 
 use super::server_helpers::create_zerodha_message;
 use super::server_helpers::register_client_for_instruments;
 
+use tokio_tungstenite::tungstenite::handshake::server::Request;
+use tokio_tungstenite::tungstenite::http::Response;
+
 #[instrument(skip(raw_stream, zerodha_client_sink, client_recv_rx, client_recv_tx, connected_clients), fields(conn_uuid = client_recv_rx.uuid))]
 pub async fn handle_aznxt_server_conn(
-    mut raw_stream: TcpStream,
+    raw_stream: TcpStream,
     zerodha_client_sink: Arc<Mutex<ZerodhaClientSink>>,
     mut client_recv_rx: IdReceiver,
     client_recv_tx: IdSender,
     connected_clients: ConnectedClients,
 ) -> Result<(), Error> {
-    store_node_service_idsender(&mut raw_stream, client_recv_tx.clone()).await;
+    let mut req_token = String::new();
 
-    let ws_stream = accept_hdr_async(raw_stream, authenticate_websocket_connection).await?;
+    let copy_token_and_auth = |request: &Request,
+                               mut response: Response<()>|
+     -> Result<Response<()>, Response<Option<String>>> {
+        if let Some(token) = extract_token_from_request(request) {
+            response
+                .headers_mut()
+                .insert("Sec-WebSocket-Protocol", token.parse().unwrap());
+
+            if token == get_env_var("NODE_JS_SERVICE_AUTH_TOKEN") {
+                req_token = token.clone();
+                return Ok(response);
+            } else if token == get_env_var("ORDER_MANAGEMENT_SERVICE_AUTH_TOKEN") {
+                return Ok(response);
+            } else {
+                // if let Err(err) = verify_jwt(token.as_str()) {
+                //     warn!("JWT Verify Error: {:?}", err);
+                //     warn!("Unauthenticated client connect request. Closing connection");
+
+                //     return Err(Response::builder()
+                //         .status(StatusCode::UNAUTHORIZED)
+                //         .body(Some(String::from("No token found in request")))
+                //         .unwrap());
+                // } else {
+                //     return Ok(response);
+                // }
+            }
+        }
+        // else {
+        //     warn!("Unauthenticated client connect request. Closing connection");
+        //     return Err(Response::builder()
+        //         .status(StatusCode::UNAUTHORIZED)
+        //         .body(Some(String::from("No token found in request")))
+        //         .unwrap());
+        // }
+
+        Ok(response)
+    };
+
+    let ws_stream = accept_hdr_async(raw_stream, copy_token_and_auth).await?;
 
     info!("ws connection established");
+
+    check_and_store_node_service_idsender(req_token, client_recv_tx.clone());
 
     let (mut client_conn_sink, client_conn_stream) = ws_stream.split();
 
