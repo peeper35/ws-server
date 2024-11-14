@@ -1,5 +1,9 @@
+use std::collections::HashMap;
+
 use jwt::Error;
 use serde_json::json;
+use tokio::io::AsyncReadExt;
+use tokio::net::TcpStream;
 use tokio_tungstenite::tungstenite::handshake::server::Request;
 use tokio_tungstenite::tungstenite::http::Response;
 use tokio_tungstenite::tungstenite::http::StatusCode;
@@ -10,7 +14,54 @@ use sha2::Sha256;
 
 use crate::channel::IdSender;
 use crate::types::ConnectedClients;
+use crate::types::NODE_SERVICE_SENDER;
 use crate::utils::get_env_var;
+
+async fn parse_headers(
+    stream: &mut TcpStream,
+) -> Result<HashMap<String, String>, Box<dyn std::error::Error>> {
+    let mut buffer = [0; 1024];
+    let mut headers = HashMap::new();
+
+    let bytes_read = stream.read(&mut buffer).await?;
+
+    let mut httparse_headers = [httparse::EMPTY_HEADER; 16];
+    let mut request = httparse::Request::new(&mut httparse_headers);
+
+    match request.parse(&buffer[..bytes_read])? {
+        httparse::Status::Complete(_) => {
+            for header in request.headers {
+                headers.insert(
+                    header.name.to_string(),
+                    String::from_utf8_lossy(header.value).to_string(),
+                );
+            }
+        }
+        httparse::Status::Partial => {
+            warn!("Incomplete Request.")
+        }
+    }
+
+    Ok(headers)
+}
+
+pub async fn store_node_service_idsender(raw_stream: &mut TcpStream, id_sender: IdSender) {
+    let headers = parse_headers(raw_stream).await.unwrap();
+
+    let token = headers.get("Sec-WebSocket-Protocol");
+
+    match token {
+        Some(token) => {
+            let node_service_auth_token = get_env_var("NODE_JS_SERVICE_AUTH_TOKEN");
+
+            if token.to_owned() == node_service_auth_token {
+                let mut sender = NODE_SERVICE_SENDER.write().unwrap();
+                *sender = Some(id_sender);
+            }
+        }
+        None => (),
+    }
+}
 
 #[instrument(skip(response))]
 pub fn authenticate_websocket_connection(
