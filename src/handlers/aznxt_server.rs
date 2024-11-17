@@ -38,13 +38,9 @@ pub async fn handle_aznxt_server_conn(
     let mut req_token = String::new();
 
     let copy_token_and_auth = |request: &Request,
-                               mut response: Response<()>|
+                               response: Response<()>|
      -> Result<Response<()>, Response<Option<String>>> {
         if let Some(token) = extract_token_from_request(request) {
-            response
-                .headers_mut()
-                .insert("Sec-WebSocket-Protocol", token.parse().unwrap());
-
             if token == get_env_var("NODE_JS_SERVICE_AUTH_TOKEN") {
                 req_token = token.clone();
                 return Ok(response);

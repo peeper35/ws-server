@@ -59,9 +59,10 @@ pub fn check_and_store_node_service_idsender(token: String, id_sender: IdSender)
 // }
 
 pub fn extract_token_from_request(request: &Request) -> Option<String> {
+    println!("{:?}", request.headers());
     request
         .headers()
-        .get("Sec-WebSocket-Protocol")
+        .get("aznxt-ws-token")
         .and_then(|token| token.to_str().ok())
         .map(|token_str| token_str.to_string())
 }
