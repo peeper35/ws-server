@@ -18,6 +18,8 @@ fn send_to_node_service_idsender(message: String) {
 
                 let mut sender = NODE_SERVICE_SENDER.write().unwrap();
                 *sender = None;
+            } else {
+                info!("Sent message to nodejs service: {}", message);
             }
         }
         None => warn!("NodeJs Service not connected"),
