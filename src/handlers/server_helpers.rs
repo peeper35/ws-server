@@ -17,6 +17,7 @@ pub fn check_and_store_node_service_idsender(token: String, id_sender: IdSender)
     if token == node_service_auth_token {
         let mut sender = NODE_SERVICE_SENDER.write().unwrap();
         *sender = Some(id_sender.clone());
+        info!("nodejs service connected")
     }
 }
 
@@ -59,7 +60,6 @@ pub fn check_and_store_node_service_idsender(token: String, id_sender: IdSender)
 // }
 
 pub fn extract_token_from_request(request: &Request) -> Option<String> {
-    println!("{:?}", request.headers());
     request
         .headers()
         .get("aznxt-ws-token")

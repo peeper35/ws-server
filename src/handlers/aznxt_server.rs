@@ -98,7 +98,6 @@ async fn handle_aznxt_client_recv(
     connected_clients: ConnectedClients,
 ) {
     while let Some(Ok(msg)) = client_conn_stream.next().await {
-        println!("Message recv: {:?}", msg);
         let instruments_text = msg.clone().into_text().unwrap();
         let client_receive_ins = serde_json::from_str::<Vec<i32>>(&instruments_text).unwrap();
 
