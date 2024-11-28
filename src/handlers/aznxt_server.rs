@@ -101,6 +101,8 @@ async fn handle_aznxt_client_recv(
         let instruments_text = msg.clone().into_text().unwrap();
         let client_receive_ins = serde_json::from_str::<Vec<i32>>(&instruments_text).unwrap();
 
+        info!("Client Subscriptions: {:?}", client_receive_ins);
+
         let zerodha_send_msg = create_zerodha_message(&client_receive_ins);
 
         zerodha_client_sink
