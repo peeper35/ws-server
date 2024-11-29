@@ -2,7 +2,7 @@ use byteorder::{BigEndian, ReadBytesExt};
 use serde::{Deserialize, Serialize};
 use std::io::{Cursor, Seek, SeekFrom};
 
-#[derive(Deserialize, Serialize, Default, Debug)]
+#[derive(Deserialize, Serialize, Default, Debug, Clone)]
 pub struct ZerodhaMessage {
     pub instrument_token: i32,
     pub last_price: f64,
@@ -22,14 +22,14 @@ pub struct ZerodhaMessage {
     pub timestamp: u64,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct BuySell {
     pub orders: f64,
     pub price: f64,
     pub quantity: f64,
 }
 
-#[derive(Deserialize, Serialize, Default, Debug)]
+#[derive(Deserialize, Serialize, Default, Debug, Clone)]
 pub struct OHLC {
     pub open: f64,
     pub high: f64,

@@ -3,9 +3,9 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-use lazy_static::lazy_static;
-
 use futures_util::stream::{SplitSink, SplitStream};
+use once_cell::sync::Lazy;
+use reqwest::Client;
 use tokio::{net::TcpStream, sync::Mutex};
 use tokio_tungstenite::{tungstenite::Message, MaybeTlsStream, WebSocketStream};
 
@@ -16,6 +16,6 @@ pub type ZerodhaClientStream = SplitStream<WebSocketStream<MaybeTlsStream<TcpStr
 pub type ConnectedClients = Arc<Mutex<HashMap<i32, Vec<IdSender>>>>;
 pub type NodeServiceSender = RwLock<Option<IdSender>>;
 
-lazy_static! {
-    pub static ref NODE_SERVICE_SENDER: NodeServiceSender = RwLock::new(None);
-}
+pub static NODE_SERVICE_SENDER: Lazy<NodeServiceSender> = Lazy::new(|| RwLock::new(None));
+
+pub static HTTP_CLIENT: Lazy<Client> = Lazy::new(|| Client::new());
